@@ -231,7 +231,7 @@ git --version
 
 > **Screenshot:** the output of all three commands in one picture.
 >
-> `![System check](docs/images/01_system_check.png)`
+> ![System check](docs/images/01_system_check.png)
 
 ### 2. Set up your Git identity
 
@@ -261,7 +261,7 @@ Expected: `humble`, `humble`, and `/usr/bin/colcon`.
 
 > **Screenshot:** the output of these commands.
 >
-> `![ROS 2 check](docs/images/02_ros_check.png)`
+> ![ROS 2 check](docs/images/02_ros_check.png)
 
 ### 4. Create the workspace and the package
 
@@ -431,7 +431,7 @@ Expected: `motor_sim motor_node`.
 
 > **Screenshot:** the build summary and the executable check.
 >
-> `![Build and verification](docs/images/05_build_and_verify.png)`
+> ![Build and verification](docs/images/05_build_and_verify.png)
 
 ### 10. Commit and push
 
@@ -465,7 +465,7 @@ Expected: `Motor node started, waiting for /cmd_vel`.
 
 > **Screenshot:** Terminal 1 after the node starts.
 >
-> `![Terminal 1: node started](docs/images/06_terminal1_node_start.png)`
+> ![Terminal 1: node started](docs/images/06_terminal1_node_start.png)
 
 ### Terminal 2: watch the telemetry
 
@@ -477,7 +477,7 @@ Expected: `data:` values of `0.0` while no command is being sent.
 
 > **Screenshot:** Terminal 2 showing the telemetry.
 >
-> `![Terminal 2: telemetry](docs/images/07_terminal2_echo.png)`
+> ![Terminal 2: telemetry](docs/images/07_terminal2_echo.png)
 
 ### Terminal 3: send a velocity command
 
@@ -491,7 +491,7 @@ target RPM, and Terminal 2 shows the values climbing toward 95.5.
 
 > **Screenshot:** Terminal 3 while publishing.
 >
-> `![Terminal 3: publisher](docs/images/08_terminal3_publisher.png)`
+> ![Terminal 3: publisher](docs/images/08_terminal3_publisher.png)
 
 Stop any terminal with `Ctrl+C`. Only Terminal 1 is the project itself. Terminals
 2 and 3 are test tools: a telemetry viewer and a command sender.
@@ -530,7 +530,7 @@ connected. Send it again, or use `--rate 2` and stop it with `Ctrl+C`.
 
 > **Screenshot:** Terminal 1 with this line.
 >
-> `![Test 1: subscriber](docs/images/09_test1_subscriber.png)`
+> ![Test 1: subscriber](docs/images/09_test1_subscriber.png)
 
 ### Test 2: Straight line (target RPM)
 
@@ -553,7 +553,7 @@ calculation: `0.5 * 60 / (2 * pi * 0.05) = 95.5`.
 
 > **Screenshot:** Terminal 1 with the `target L=95.5 R=95.5` line.
 >
-> `![Test 2: straight line](docs/images/10_test2_straight_line.png)`
+> ![Test 2: straight line](docs/images/10_test2_straight_line.png)
 
 ### Test 3: Turning (left and right differ)
 
@@ -575,7 +575,7 @@ Check: `half = 1.0 * 0.4 / 2 = 0.2`, so `v_left = 0.3 m/s` (57.3 RPM) and
 
 > **Screenshot:** Terminal 1 with the `target L=57.3 R=133.7` line.
 >
-> `![Test 3: turning](docs/images/11_test3_turning.png)`
+> ![Test 3: turning](docs/images/11_test3_turning.png)
 
 ### Test 4: Motor lag (ramp up and ramp down)
 
@@ -609,7 +609,7 @@ with a 0.5 s time constant predicts.
 
 > **Screenshot:** the output of the last command (the ramp up and ramp down).
 >
-> `![Test 4: ramp up and ramp down](docs/images/12_test4_ramp_and_timeout.png)`
+> ![Test 4: ramp up and ramp down](docs/images/12_test4_ramp_and_timeout.png)
 
 ### Test 5: Parameters are configurable
 
@@ -633,7 +633,7 @@ then `Double value is: 0.4` and `Double value is: 3000.0`.
 
 > **Screenshot:** the output of these three commands.
 >
-> `![Test 5A: parameters loaded](docs/images/13_test5a_params_loaded.png)`
+> ![Test 5A: parameters loaded](docs/images/13_test5a_params_loaded.png)
 
 **Part B: change a parameter and see the effect**
 
@@ -657,7 +657,7 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}, angul
 
 > **Screenshot:** Terminal 1 showing `target L=47.7 R=47.7 rpm`.
 >
-> `![Test 5B: wheel radius changed](docs/images/14_test5b_radius_change.png)`
+> ![Test 5B: wheel radius changed](docs/images/14_test5b_radius_change.png)
 
 5. **Put it back:** press `Ctrl+C` and start the node again without the
    `--ros-args` part. The override only lasts for that run, so nothing in the
