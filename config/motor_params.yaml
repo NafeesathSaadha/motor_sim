@@ -1,0 +1,7 @@
+motor_node:
+  ros__parameters:
+    wheel_radius: 0.05
+    wheel_separation: 0.4
+    max_rpm: 3000.0
+    time_constant: 0.5
+    publish_rate: 50.0
