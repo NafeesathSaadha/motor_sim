@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='saadha',
     maintainer_email='nafeesathsaadha@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Motor firmware simulator and ROS 2 bridge for underwater robotics',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',
