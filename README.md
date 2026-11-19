@@ -500,8 +500,6 @@ source install/setup.bash
 ```
 
 A successful build ends with `Summary: 1 package finished`. Check that ROS can
-find the node:
-
 find the node, and that the launch and config files were installed:
 
 ```bash
