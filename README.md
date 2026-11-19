@@ -37,9 +37,11 @@ acceleration and deceleration, and publishes the RPM telemetry to ROS 2.
 - Two-motor differential-drive model (left and right thrusters)
 - Converts velocity to target RPM and clamps it to a configurable maximum
 - First-order lag model, so RPM ramps up and down smoothly instead of jumping
+- Command timeout: if no command arrives for 1 second, the target resets to 0
+  (the motors then ramp down, as a real controller stops on loss of command)
 - Publishes telemetry on `/motor/rpm` at a configurable rate (default 50 Hz)
-- All physical constants are ROS parameters with defaults, and can be changed at
-  start-up without editing code
+- All physical constants are ROS parameters with defaults. They can be loaded from a
+  YAML file by a launch file, or overridden at start-up, without editing code
 
 ---
 
@@ -61,6 +63,7 @@ acceleration and deceleration, and publishes the RPM telemetry to ROS 2.
 │                                                         │
 │  1. Differential drive    -> target RPM (L, R)          │
 │  2. First-order motor lag -> current RPM                │
+│  3. Command timeout (1 s) -> target resets to 0         │
 │                                                         │
 │  Publishes:   /motor/rpm                                │
 └────────────────────────────┬────────────────────────────┘
@@ -105,8 +108,9 @@ node would send `/cmd_vel`, and a logger or dashboard would read `/motor/rpm`.
 | `time_constant`    | 0.5     | s    | Motor lag time constant (larger = slower response) |
 | `publish_rate`     | 50.0    | Hz   | Rate of the simulation update and telemetry        |
 
-The defaults are declared in [`motor_sim/motor_node.py`](motor_sim/motor_node.py).
-Any of them can be overridden when starting the node, for example:
+The defaults are declared in [`motor_sim/motor_node.py`](motor_sim/motor_node.py) and
+repeated in [`config/motor_params.yaml`](config/motor_params.yaml), which the launch
+file loads. Any of them can also be overridden when starting the node, for example:
 
 ```bash
 ros2 run motor_sim motor_node --ros-args -p wheel_radius:=0.1
@@ -144,6 +148,11 @@ current_rpm = current_rpm + (target_rpm - current_rpm) * alpha
 This is the exact discrete form of a first-order system, so the response is
 independent of the publish rate. After one time constant (0.5 s) the motor
 reaches about 63% of the way to the target.
+
+**4. Command timeout**
+
+If more than 1 second passes since the last `/cmd_vel` message, `target_rpm` is
+set to `[0, 0]` and the lag model brings the motors to rest.
 
 **Worked example** (defaults, `linear.x = 0.5`, `angular.z = 0.0`):
 
@@ -190,8 +199,10 @@ Git repository and is uploaded to GitHub. The workspace itself and the
 
 | File | Purpose |
 |------|---------|
-| [`motor_sim/motor_node.py`](motor_sim/motor_node.py) | The node: subscriber, RPM conversion, motor lag, telemetry |
-| [`setup.py`](setup.py) | Package metadata and the `motor_node` entry point |
+| [`motor_sim/motor_node.py`](motor_sim/motor_node.py) | The node: subscriber, RPM conversion, motor lag, command timeout, telemetry |
+| [`config/motor_params.yaml`](config/motor_params.yaml) | Default parameter values |
+| [`launch/motor_sim.launch.py`](launch/motor_sim.launch.py) | Launch file that loads the parameter file |
+| [`setup.py`](setup.py) | Package metadata, the `motor_node` entry point, and installed launch/config files |
 | [`package.xml`](package.xml) | Package metadata and dependencies |
 
 ---
@@ -384,7 +395,7 @@ When prompted, enter your GitHub username, and paste the token as the password.
 
 **Why this step:** `motor_node.py` is the core of the project. It subscribes to
 `/cmd_vel`, converts the command to target RPM, simulates the motor lag with a
-timer, and publishes telemetry on `/motor/rpm`.
+timer, applies the command timeout, and publishes telemetry on `/motor/rpm`.
 
 The node file goes in the **inner** `motor_sim` folder, next to `__init__.py`:
 
@@ -416,6 +427,8 @@ This line is what lets `ros2 run motor_sim motor_node` find the code.
 ### 9. Add the parameter file
 
 **Why this step:** so the physical constants can be changed without editing code.
+
+The launch file (next step) loads this file.
 
 ```bash
 mkdir -p ~/motor_ws/src/motor_sim/config
@@ -489,11 +502,15 @@ source install/setup.bash
 A successful build ends with `Summary: 1 package finished`. Check that ROS can
 find the node:
 
+find the node, and that the launch and config files were installed:
+
 ```bash
 ros2 pkg executables motor_sim
+ls ~/motor_ws/install/motor_sim/share/motor_sim/launch \
+   ~/motor_ws/install/motor_sim/share/motor_sim/config
 ```
 
-Expected: `motor_sim motor_node`.
+Expected: `motor_sim motor_node`, then `motor_sim.launch.py` and `motor_params.yaml`.
 
 > **Screenshot:** the build summary and the executable check.
 >
@@ -525,6 +542,12 @@ Start the terminals in this order: 1, then 2, then 3. Keep all three open.
 
 ```bash
 ros2 run motor_sim motor_node
+```
+
+Or start it with the launch file, which loads `config/motor_params.yaml`:
+
+```bash
+ros2 launch motor_sim motor_sim.launch.py
 ```
 
 Expected: `Motor node started, waiting for /cmd_vel`.
@@ -665,8 +688,8 @@ Example samples (left motor, same for right), taken about every 0.5 s. Your
 numbers will differ slightly:
 
 ```
-Ramp up:    0 -> 28.9 -> 71.0 -> 86.5 -> 92.2  (approaching 95.5)
-Ramp down:  65.4 -> 24.1 -> 8.9 -> 3.3 -> 1.2 -> 0.4 -> ... -> 0.0004
+Ramp up:    0 -> 36.4 -> 73.8 -> 87.5 -> 92.6  (approaching 95.5)
+Ramp down:  55.7 -> 20.5 -> 7.5 -> 2.8 -> 1.0 -> 0.4 -> ... -> 0.0009
 ```
 
 The value never jumps. During the ramp down, each half-second shrinks the
@@ -742,8 +765,11 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}, angul
   timer, independent of how often `/cmd_vel` arrives, as real firmware loops do.
 - **`Float32MultiArray`:** a standard message type, so no custom message
   package is needed. The order is fixed: `[left, right]`.
-- **Parameters:** physical constants are ROS parameters with defaults, so the
-  robot can be reconfigured at start-up without editing code.
+- **Command timeout:** a safety behaviour so the simulated thrusters do not
+  keep running at the last command if the controller disappears.
+- **Parameters, YAML and launch file:** physical constants are ROS parameters with
+  defaults, so the robot can be reconfigured without editing code, either from
+  `config/motor_params.yaml` (via the launch file) or on the command line.
 
 ---
 
@@ -758,9 +784,8 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}, angul
   fault flags.
 - A custom message type with a header and per-motor names would be more
   self-describing than `Float32MultiArray`.
-- There is no command timeout. If `/cmd_vel` messages stop arriving, the last
-  target is kept, so a stop command (zero velocity) must be sent. A watchdog that
-  resets the target to 0 after a short silence would be a sensible safety addition.
+- The command timeout is fixed at 1 second in the code. It could be made a
+  parameter.
 - Unit tests for the conversion and lag functions could be added.
 
 ---
